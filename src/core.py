@@ -3,17 +3,25 @@
 # Core functions for PTF
 ################################
 import os
+import platform
 import subprocess
 import select
 import readline
 import glob
+try:
+    import rlcompleter
+except ImportError:
+    if os.path.isfile("/Applications/App Store.app/Contents/version.plist"):
+        print "[!] rlcompleter not installed. Without this module tabcomplete will not work properly..."
+        print "[!] You can install rlcompleter with the command 'sudo pip install readline rlcompleter..."
+        raw_input('Press <ENTER> to continue')
 
 # tab completion
 def complete(text, state):
-	return (glob.glob(text+'*')+[None])[state].replace("__init__.py", "").replace(".py", "").replace("LICENSE", "").replace("README.md", "").replace("config", "").replace("ptf", "").replace("readme", "").replace("src", "").replace("         ", "")
+        return (glob.glob(text+'*')+[None])[state].replace("__init__.py", "").replace(".py", "").replace("LICENSE", "").replace("README.md", "").replace("config", "").replace("ptf", "").replace("readme", "").replace("src", "").replace("         ", "")
 
 readline.set_completer_delims(' \t\n;')
-readline.parse_and_bind("tab: complete")
+readline.parse_and_bind("bind ^I rl_complete")
 readline.set_completer(complete)
 # end tab completion
 
@@ -80,7 +88,7 @@ def count_modules():
 grab_version = "0.9.6"
 
 # banner
-banner = bcolors.RED + r"""
+banner = bcolors.RED + """
 
                      ______  __ __    ___                                   
                     |      T|  T  T  /  _]                                  
@@ -108,20 +116,20 @@ l__j   l__j\_jl__j__jl___j___jl_____j  \_/\_/   \___/ l__j\_jl__j\_j
 """
 
 banner += bcolors.ENDC + """
-		     The"""
+                     The"""
 banner += bcolors.BOLD + """ PenTesters """
 banner += bcolors.ENDC + """Framework\n\n"""
 
-banner += """        		 """ + bcolors.backBlue + """Version: %s""" % (grab_version) + bcolors.ENDC + "\n"
+banner += """                    """ + bcolors.backBlue + """Version: %s""" % (grab_version) + bcolors.ENDC + "\n"
 
-banner += bcolors.YELLOW + bcolors.BOLD + """		     Codename: """ + bcolors.BLUE + """GitDatShiny""" + "\n"
+banner += bcolors.YELLOW + bcolors.BOLD + """                Codename: """ + bcolors.BLUE + """GitDatShiny""" + "\n"
 
-banner += """		       """ + bcolors.ENDC + bcolors.backRed + """Red Team Approved""" + bcolors.ENDC + "\n"
+banner += """                  """ + bcolors.ENDC + bcolors.backRed + """Red Team Approved""" + bcolors.ENDC + "\n"
 
-banner += """        	     A project by """ + bcolors.GREEN + bcolors.BOLD + """Trusted""" + bcolors.ENDC + bcolors.BOLD + """Sec""" + bcolors.ENDC + "\n"
+banner += """                A project by """ + bcolors.GREEN + bcolors.BOLD + """Trusted""" + bcolors.ENDC + bcolors.BOLD + """Sec""" + bcolors.ENDC + "\n"
 
-banner += """		 Written by: """ + bcolors.BOLD + """Dave Kennedy (ReL1K)""" + bcolors.ENDC + "\n"
-banner += """		Twitter: """ + bcolors.BOLD + """@HackingDave, @TrustedSec""" + bcolors.ENDC + "\n"
+banner += """            Written by: """ + bcolors.BOLD + """Dave Kennedy (ReL1K)""" + bcolors.ENDC + "\n"
+banner += """           Twitter: """ + bcolors.BOLD + """@HackingDave, @TrustedSec""" + bcolors.ENDC + "\n"
 banner += """                  """ + bcolors.BOLD + """https://www.trustedsec.com
         """ + bcolors.ENDC
 banner += bcolors.BOLD + """\n              The easy way to get the new and shiny.
@@ -169,11 +177,11 @@ def module_parser(filename, term):
         if counter == 0:
             filename_short = filename.replace(definepath() + "/", "")
             filename_short = filename_short.replace(".py", "")
-	    if term != "BYPASS_UPDATE":
-		    print_error("Warning, module %s was found but contains no %s field." % (filename_short,term))
-		    print_error("Check the module again for errors and try again.")
-		    print_error("Module has been removed from the list.")
-	    return None
+            if term != "BYPASS_UPDATE":
+                    print_error("Warning, module %s was found but contains no %s field." % (filename_short,term))
+                    print_error("Check the module again for errors and try again.")
+                    print_error("Module has been removed from the list.")
+            return None
 
     # if the file isn't there
     if not os.path.isfile(filename):
@@ -199,6 +207,12 @@ def profile_os():
         return "DEBIAN"
 
     # will add support for more operating systems later
+    
+    #if we are running OSX
+    if os.path.isfile("/Applications/App Store.app/Contents/version.plist"):
+        from src.checks.osx_check import check_dependency
+        check_dependency()
+        return "OSX"
 
     # else use custom
     else:
@@ -233,76 +247,76 @@ def home_directory():
 
 # this will run commands after an install or update on a module
 def after_commands(filename,install_location):
-	from src.commands import after_commands
-	commands = module_parser(filename, "AFTER_COMMANDS")
-	if commands != "":
-		# here we check if install location needs to be added
-		if "{INSTALL_LOCATION}" in commands:
-			commands = commands.replace("{INSTALL_LOCATION}", install_location)
-		print_status("Running after commands for post installation requirements.")
-		after_commands(commands)
-		print_status("Completed running after commands routine..")
+        from src.commands import after_commands
+        commands = module_parser(filename, "AFTER_COMMANDS")
+        if commands != "":
+                # here we check if install location needs to be added
+                if "{INSTALL_LOCATION}" in commands:
+                        commands = commands.replace("{INSTALL_LOCATION}", install_location)
+                print_status("Running after commands for post installation requirements.")
+                after_commands(commands)
+                print_status("Completed running after commands routine..")
 
 # launcher - create launcher under /usr/local/bin
 def launcher(filename, install_location):
-	launcher = module_parser(filename, "LAUNCHER")
-	if launcher != "":
-		# create a launcher if it doesn't exist
-		if "," in launcher: launcher = launcher.split(",")
-		for launchers in launcher:
-			# means theres only one command
-			if len(launchers) == 1: launchers = launcher
+        launcher = module_parser(filename, "LAUNCHER")
+        if launcher != "":
+                # create a launcher if it doesn't exist
+                if "," in launcher: launcher = launcher.split(",")
+                for launchers in launcher:
+                        # means theres only one command
+                        if len(launchers) == 1: launchers = launcher
 
-			if not os.path.isfile("/usr/local/bin/" + launchers):
+                        if not os.path.isfile("/usr/local/bin/" + launchers):
 
-				# base launcher filename
-				point = ""
+                                # base launcher filename
+                                point = ""
 
-				# make sure the actual launcher is there with known filetypes
-				if os.path.isfile(install_location + "/" + launchers):
-					# specific launcher file
-					point = "./" + launchers
-					file_point = launchers
+                                # make sure the actual launcher is there with known filetypes
+                                if os.path.isfile(install_location + "/" + launchers):
+                                        # specific launcher file
+                                        point = "./" + launchers
+                                        file_point = launchers
 
-				# check for Python
-				if os.path.isfile(install_location + "/" + launchers + ".py"):
-					point = "./" + launchers + ".py"
-					file_point = launchers + ".py"
+                                # check for Python
+                                if os.path.isfile(install_location + "/" + launchers + ".py"):
+                                        point = "./" + launchers + ".py"
+                                        file_point = launchers + ".py"
 
-				# check for Ruby
-				if os.path.isfile(install_location + "/" + launchers + ".rb"):
-					point = "./" + launchers + ".rb"
-					file_point = launchers + ".rb"
+                                # check for Ruby
+                                if os.path.isfile(install_location + "/" + launchers + ".rb"):
+                                        point = "./" + launchers + ".rb"
+                                        file_point = launchers + ".rb"
 
-				# check for Perl - ew Perl. Ew ew ew ew ew ew =)
-				if os.path.isfile(install_location + "/" + launchers + ".pl"):
-					point = "./" + launchers + ".pl"
-					file_point = launchers + ".pl"
+                                # check for Perl - ew Perl. Ew ew ew ew ew ew =)
+                                if os.path.isfile(install_location + "/" + launchers + ".pl"):
+                                        point = "./" + launchers + ".pl"
+                                        file_point = launchers + ".pl"
 
-				# check for bash
-				if os.path.isfile(install_location + "/" + launchers + ".sh"):
-					point = "./" + launchers + ".sh"
-					file_point = launchers + ".sh"
+                                # check for bash
+                                if os.path.isfile(install_location + "/" + launchers + ".sh"):
+                                        point = "./" + launchers + ".sh"
+                                        file_point = launchers + ".sh"
 
-				# check of executable, then flag wine
-				if os.path.isfile(install_location + "/" + launchers + ".exe"):
-					point = "wine " + launchers + ".exe"				
-					file_point = launchers + ".exe"
+                                # check of executable, then flag wine
+                                if os.path.isfile(install_location + "/" + launchers + ".exe"):
+                                        point = "wine " + launchers + ".exe"                            
+                                        file_point = launchers + ".exe"
 
-				# if we found filetype
-				if point != "":					
-					filewrite = file("/usr/local/bin/" + launchers, "w")
-					filewrite.write("#!/bin/sh\ncd %s\nchmod +x %s\n%s" % (install_location,file_point,point))
-					filewrite.close()
-					subprocess.Popen("chmod +x /usr/local/bin/%s" % (launchers), shell=True).wait()
-					print_status("Created automatic launcher, you can run the tool from anywhere by typing: " + launchers)
+                                # if we found filetype
+                                if point != "":                                 
+                                        filewrite = file("/usr/local/bin/" + launchers, "w")
+                                        filewrite.write("#!/bin/sh\ncd %s\nchmod +x %s\n%s" % (install_location,file_point,point))
+                                        filewrite.close()
+                                        subprocess.Popen("chmod +x /usr/local/bin/%s" % (launchers), shell=True).wait()
+                                        print_status("Created automatic launcher, you can run the tool from anywhere by typing: " + launchers)
 
-			# just need to do this once
-			if len(launchers) == 1: break
+                        # just need to do this once
+                        if len(launchers) == 1: break
 
 # search functionality here
 def search(term):
-	term = term.replace("search ", "")
+        term = term.replace("search ", "")
         module_files = []
         for dirpath, subdirs, files in os.walk("modules/"):
             for x in files:
@@ -319,9 +333,9 @@ def search(term):
                                                 x = x.replace(".py", "")
                                                 module_files.append(os.path.join(dirpath, x))
 
-	if module_files != []:
-		print_status("Search results below:")
-	        for modules in module_files:
-	                print modules
+        if module_files != []:
+                print_status("Search results below:")
+                for modules in module_files:
+                        print modules
 
-	else: print_warning("Search found no results.")
+        else: print_warning("Search found no results.")

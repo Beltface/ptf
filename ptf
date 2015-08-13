@@ -16,7 +16,7 @@ def check_internet():
         try:
 		print "[*] Checking for an Internet connection..."
                 rhost = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                rhost.connect(('google.com', 0))
+                rhost.connect(('google.com', 1))
                 rhost.settimeout(2)
 		return 1
 
