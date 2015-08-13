@@ -85,7 +85,7 @@ def count_modules():
         return counter
 
 # version information
-grab_version = "0.9.7"
+grab_version = "0.9.8"
 
 # banner
 banner = bcolors.RED + """
@@ -177,11 +177,20 @@ def module_parser(filename, term):
         if counter == 0:
             filename_short = filename.replace(definepath() + "/", "")
             filename_short = filename_short.replace(".py", "")
+<<<<<<< HEAD
             if term != "BYPASS_UPDATE":
                     print_error("Warning, module %s was found but contains no %s field." % (filename_short,term))
                     print_error("Check the module again for errors and try again.")
                     print_error("Module has been removed from the list.")
             return None
+=======
+	    if term != "BYPASS_UPDATE":
+		if term !="LAUNCHER":
+		    print_error("Warning, module %s was found but contains no %s field." % (filename_short,term))
+		    print_error("Check the module again for errors and try again.")
+		    print_error("Module has been removed from the list.")
+	    return None
+>>>>>>> upstream/master
 
     # if the file isn't there
     if not os.path.isfile(filename):
@@ -259,6 +268,7 @@ def after_commands(filename,install_location):
 
 # launcher - create launcher under /usr/local/bin
 def launcher(filename, install_location):
+<<<<<<< HEAD
         launcher = module_parser(filename, "LAUNCHER")
         if launcher != "":
                 # create a launcher if it doesn't exist
@@ -313,6 +323,65 @@ def launcher(filename, install_location):
 
                         # just need to do this once
                         if len(launchers) == 1: break
+=======
+	launcher = module_parser(filename, "LAUNCHER")
+
+	# if its optional
+	if launcher == None: launcher = ""
+	if launcher != "":
+		# create a launcher if it doesn't exist
+		if "," in launcher: launcher = launcher.split(",")
+		for launchers in launcher:
+			# means theres only one command
+			if len(launchers) == 1: launchers = launcher
+
+			if not os.path.isfile("/usr/local/bin/" + launchers):
+
+				# base launcher filename
+				point = ""
+
+				# make sure the actual launcher is there with known filetypes
+				if os.path.isfile(install_location + "/" + launchers):
+					# specific launcher file
+					point = "./" + launchers
+					file_point = launchers
+
+				# check for Python
+				if os.path.isfile(install_location + "/" + launchers + ".py"):
+					point = "./" + launchers + ".py"
+					file_point = launchers + ".py"
+
+				# check for Ruby
+				if os.path.isfile(install_location + "/" + launchers + ".rb"):
+					point = "./" + launchers + ".rb"
+					file_point = launchers + ".rb"
+
+				# check for Perl - ew Perl. Ew ew ew ew ew ew =)
+				if os.path.isfile(install_location + "/" + launchers + ".pl"):
+					point = "./" + launchers + ".pl"
+					file_point = launchers + ".pl"
+
+				# check for bash
+				if os.path.isfile(install_location + "/" + launchers + ".sh"):
+					point = "./" + launchers + ".sh"
+					file_point = launchers + ".sh"
+
+				# check of executable, then flag wine
+				if os.path.isfile(install_location + "/" + launchers + ".exe"):
+					point = "wine " + launchers + ".exe"				
+					file_point = launchers + ".exe"
+
+				# if we found filetype
+				if point != "":					
+					filewrite = file("/usr/local/bin/" + launchers, "w")
+					filewrite.write("#!/bin/sh\ncd %s\nchmod +x %s\n%s" % (install_location,file_point,point))
+					filewrite.close()
+					subprocess.Popen("chmod +x /usr/local/bin/%s" % (launchers), shell=True).wait()
+					print_status("Created automatic launcher, you can run the tool from anywhere by typing: " + launchers)
+
+			# just need to do this once
+			if len(launchers) == 1: break
+>>>>>>> upstream/master
 
 # search functionality here
 def search(term):
