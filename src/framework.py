@@ -149,6 +149,7 @@ def use_module(module, all_trigger):
                     proc = subprocess.Popen("cd %s;git pull" % (install_location), stderr=subprocess.PIPE, shell=True).wait()
                     print_status("Finished Installing! Enjoy the tool installed under: " + (install_location))
 
+<<<<<<< HEAD
                     # run after commands
                     if prompt != "update":
                             after_commands(filename,install_location)
@@ -160,6 +161,19 @@ def use_module(module, all_trigger):
                                 subprocess.Popen("bundle install", shell=True).wait()
                                 print_status("Sacrifice to the ruby Gods complete. MSF should now work outside of the msf directory structure..")
                                 os.chdir(cwd)   
+=======
+		    # run after commands
+		    if prompt != "update":
+	                    after_commands(filename,install_location)
+			    # special metasploit voodoo needed here
+		    	    if os.path.isfile(install_location + "/msfconsole"):
+				cwd = os.getcwd()
+				os.chdir("/usr/local/bin")
+				print_status("Needing to perform special Metasploit voodoo to get launcher to work.. Wait for another bundle install...")
+				subprocess.Popen("cd /%s;bundle install;rm -rf /usr/local/rvm/gems/ruby-2.2.2/bin/msf*" % (install_location), shell=True).wait()
+				print_status("Sacrifice to the ruby Gods complete. MSF should now work outside of the msf directory structure..")
+				os.chdir(cwd)	
+>>>>>>> upstream/master
 
                     # check launcher
                     launcher(filename, install_location)
